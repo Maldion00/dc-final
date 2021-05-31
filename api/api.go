@@ -3,13 +3,12 @@ package api
 import (
 	"encoding/base64"
 	"fmt"
-	"net/http"
+	"os"
 	"strings"
 	"time"
 
+	"github.com/MauCt/dc-final/controller"
 	"github.com/gin-gonic/gin"
-	"go.nanomsg.org/mangos"
-	"go.nanomsg.org/mangos/protocol/push"
 )
 
 //Struct to save the data of the users
@@ -20,14 +19,11 @@ type userData struct {
 }
 
 //Users map
-var (
-	users      = make(map[string]userData)
-	APIadress  = "tcp://localhost:40899"
-	APImessage = "ACTIVATE"
-)
+var users = make(map[string]userData)
 
 //Login function that takes the parameters and decode them to have the username and password.
 //Validates if the user is already created.
+
 func login(c *gin.Context) {
 
 	loginAuth := strings.SplitN(c.Request.Header.Get("Authorization"), " ", 2)
@@ -97,11 +93,73 @@ func getStatus(c *gin.Context) {
 	if exist {
 
 		c.JSON(200, gin.H{
-			"system_name":      "Distributed Systems Class - Final Challenge",
-			"time":             time.Now(),
-			"active_workloads": "to be implemented",
+			"System Name": "Distributed Systems Class",
+			"time":        time.Now(),
+			"Workloads":   len(controller.Workloads),
 		})
 
+	} else {
+		c.JSON(200, gin.H{
+			"message": "Invalid token",
+		})
+	}
+}
+
+func CreateWorkload(c *gin.Context) {
+	loginAuth := strings.SplitN(c.Request.Header.Get("Authorization"), " ", 2)
+	tokenKey := loginAuth[1]
+	_, exist := users[tokenKey]
+	if exist {
+		workloadName := fmt.Sprintf("%v", len(controller.Workloads))
+		filter := c.PostForm("filter")
+
+		workloadFolder := "images/" + fmt.Sprintf("%v", len(controller.Workloads)) + "/"
+		_ = os.MkdirAll(workloadFolder, 0755)
+
+		newWL := controller.Workload{
+			Id:       fmt.Sprintf("%v", len(controller.Workloads)),
+			Filter:   filter,
+			Name:     workloadName,
+			Status:   "scheduling",
+			Jobs:     0,
+			Imgs:     []string{},
+			Filtered: []string{},
+		}
+
+		controller.Workloads[fmt.Sprintf("%v", newWL.Id)] = newWL
+
+		c.JSON(200, gin.H{
+			"workload_id":     newWL.Id,
+			"filter":          newWL.Filter,
+			"workload_name":   newWL.Name,
+			"status":          newWL.Status,
+			"running_jobs":    newWL.Jobs,
+			"filtered_images": []string{},
+		})
+	} else {
+		c.JSON(200, gin.H{
+			"message": "Invalid token",
+		})
+	}
+}
+
+func getWorkloads(c *gin.Context) {
+	loginAuth := strings.SplitN(c.Request.Header.Get("Authorization"), " ", 2)
+	tokenKey := loginAuth[1]
+	workload_id := c.Param("workload_id")
+	_, exist := users[tokenKey]
+	if exist {
+
+		tempWorkload := controller.Workloads[workload_id]
+
+		c.JSON(200, gin.H{
+			"workload_id":     tempWorkload.Id,
+			"filter":          tempWorkload.Filter,
+			"workload_name":   tempWorkload.Name,
+			"status":          tempWorkload.Status,
+			"running_jobs":    tempWorkload.Jobs,
+			"filtered_images": controller.Workloads[workload_id].Filtered,
+		})
 	} else {
 		c.JSON(200, gin.H{
 			"message": "Invalid token",
@@ -110,87 +168,47 @@ func getStatus(c *gin.Context) {
 }
 
 //Validates if the user exist using the token key and if the user exists it uploads the test.jpg image to the same folder.
-
-func WorkloadCreation(c *gin.Context) {
+/*func uploadImage(c *gin.Context) {
 	loginAuth := strings.SplitN(c.Request.Header.Get("Authorization"), " ", 2)
 	tokenKey := loginAuth[1]
 	_, exist := users[tokenKey]
+	file, header, err := c.Request.FormFile("data")
+	if err != nil {
+		log.Fatal(err)
+	}
 	if exist {
-		filter := c.Request.FormValue("filter")
-		workloadName := c.Request.FormValue("workload_name")
-		if filter == "grayscale" || filter == "blur" {
-			c.JSON(http.StatusOK, gin.H{
-				"workload_id":     "",
-				"filter":          filter,
-				"workload_name":   workloadName,
-				"status":          "scheduling, running, completed",
-				"running_jobs":    0,
-				"filtered_images": "",
-			})
-		} else {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"status": false, "message": "Filter not supported"})
+		filename := header.Filename
+		fileSize := header.Size
+		imageOut, err := os.Create("copy" + filename)
+		if err != nil {
+			log.Fatal(err)
 		}
-
+		defer imageOut.Close()
+		_, err = io.Copy(imageOut, file)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fileSize = fileSize / 1000
+		str := strconv.FormatInt(fileSize, 10)
+		c.JSON(200, gin.H{
+			"message":  "An image has been successfully uploaded",
+			"filename": filename,
+			"size":     str + "kb",
+		})
 	} else {
 		c.JSON(200, gin.H{
 			"message": "Invalid token",
 		})
 	}
-}
-func getInfoWorkload(c *gin.Context) {
-	loginAuth := strings.SplitN(c.Request.Header.Get("Authorization"), " ", 2)
-	workloadID := loginAuth[1]
-	_, exist := users[workloadID]
-	if exist {
-
-		c.JSON(http.StatusOK, gin.H{
-			"workload_id":     workloadID,
-			"filter":          "",
-			"workload_name":   "",
-			"status":          "scheduling, running, completed",
-			"running_jobs":    0,
-			"filtered_images": "",
-		})
-
-	} else {
-		c.JSON(200, gin.H{
-			"message": "Invalid token",
-		})
-	}
-}
-
-func SendMessage(url string, msg string) {
-	var sock mangos.Socket
-	var err error
-
-	if sock, err = push.NewSocket(); err != nil {
-		die("can't get new push socket: %s", err.Error())
-	}
-	if err = sock.Dial(url); err != nil {
-		die("can't dial on push socket: %s", err.Error())
-	}
-	fmt.Printf("NODE1: SENDING \"%s\"\n", msg)
-	if err = sock.Send([]byte(msg)); err != nil {
-		die("can't send message on push socket: %s", err.Error())
-	}
-	time.Sleep(time.Second / 10)
-	sock.Close()
-}
+}*/
 
 func Start() {
-	SendMessage(APIadress, APImessage)
 	r := gin.Default()
 	r.POST("/login", login)
 	r.DELETE("/logout", Logout)
 	r.GET("/status", getStatus)
-
+	r.POST("/workloads", CreateWorkload)
+	r.GET("/workloads/:workload_id", getWorkloads)
 	r.Run()
 
 }
-
-/*Links of the codes and information we use to make this project:
-https://github.com/gin-gonic/gin
-https://www.youtube.com/watch?v=RkmvVFZJJvs
-https://gist.github.com/schollz/f25d77afc9130b72390748bdbce0d9a3
-https://github.com/vaksi/go_auth_api
-*/

@@ -8,21 +8,24 @@ import (
 
 	"go.nanomsg.org/mangos"
 	"go.nanomsg.org/mangos/protocol/pub"
-	"go.nanomsg.org/mangos/protocol/pull"
+
+	// register transports
+	_ "go.nanomsg.org/mangos/transport/all"
 )
 
-type workload struct {
-	id             string
-	filter         string
-	name           string
-	status         string
-	runningJobs    int
-	FilteredImages []string
+var controllerAddress = "tcp://localhost:40899"
+var sock mangos.Socket
+var Workloads = make(map[string]Workload)
+
+type Workload struct {
+	Id       string
+	Filter   string
+	Name     string
+	Status   string
+	Jobs     int
+	Imgs     []string
+	Filtered []string
 }
-
-var (
-	controllerAddress = "tcp://localhost:40899"
-)
 
 func die(format string, v ...interface{}) {
 	fmt.Fprintln(os.Stderr, fmt.Sprintf(format, v...))
@@ -32,34 +35,26 @@ func die(format string, v ...interface{}) {
 func date() string {
 	return time.Now().Format(time.ANSIC)
 }
-
-func Start() {
-
-
-	RecieveMessage(controllerAddress)
-
-	}
+func GetWorkloadName(key string) string {
+	return Workloads[key].Name
 }
 
-func RecieveMessage(url string) {
+func Start() {
 	var sock mangos.Socket
 	var err error
-	var msg []byte
-	if sock, err = pull.NewSocket(); err != nil {
-		die("can't get new pull socket: %s", err)
+	if sock, err = pub.NewSocket(); err != nil {
+		die("can't get new pub socket: %s", err)
 	}
 	if err = sock.Listen(controllerAddress); err != nil {
-		die("can't listen on pull socket: %s", err.Error())
+		die("can't listen on pub socket: %s", err.Error())
 	}
-	msg, err = sock.Recv()
-	if err != nil {
-		die("cannot receive from mangos Socket: %s", err.Error())
-	}
-	fmt.Printf("CONTROLLER: RECEIVED \"%s\"\n", msg)
-
-	if string(msg) == "ACTIVATE" {
-
-		fmt.Println("CONTROLLER: ACTIVATED")
-
+	for {
+		// Could also use sock.RecvMsg to get header
+		d := date()
+		log.Printf("Controller: Publishing Date %s\n", d)
+		if err = sock.Send([]byte(d)); err != nil {
+			die("Failed publishing: %s", err.Error())
+		}
+		time.Sleep(time.Second * 3)
 	}
 }
