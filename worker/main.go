@@ -30,6 +30,10 @@ var (
 	controllerAddress = ""
 	workerName        = ""
 	tags              = ""
+	work              = 0
+	JobsDone          = 0
+	status            = ""
+	i                 = 1
 )
 
 func die(format string, v ...interface{}) {
@@ -74,6 +78,7 @@ func joinCluster() {
 		}
 		log.Printf("Message-Passing: Worker(%s): Received %s\n", workerName, string(msg))
 	}
+
 }
 
 func getAvailablePort() int {
@@ -109,3 +114,13 @@ func main() {
 		log.Fatalf("failed to serve: %v", err)
 	}
 }
+
+// Connect to the Controller
+// Subscribe as a new worker
+func ConnectToController() {
+
+}
+
+// Recieve endpoints and tokens from the API
+// Recieve jobs
+// Return number of running jobs

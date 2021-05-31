@@ -6,9 +6,9 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/CodersSquad/dc-final/api"
-	"github.com/CodersSquad/dc-final/controller"
-	"github.com/CodersSquad/dc-final/scheduler"
+	"github.com/Maldion00/dc-final/api"
+	"github.com/Maldion00/dc-final/controller"
+	"github.com/Maldion00/dc-final/scheduler"
 )
 
 func main() {
@@ -27,6 +27,7 @@ func main() {
 	go api.Start()
 
 	for {
+		// add SayHelloFunction
 		sampleJob.RPCName = fmt.Sprintf("hello-%v", rand.Intn(10000))
 		jobs <- sampleJob
 		time.Sleep(time.Second * 5)
