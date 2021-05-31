@@ -2,14 +2,11 @@ package api
 
 import (
 	"encoding/base64"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"go.nanomsg.org/mangos"
-	"go.nanomsg.org/mangos/protocol/req"
 )
 
 //Struct to save the data of the users
@@ -156,7 +153,7 @@ func getInfoWorkload(c *gin.Context) {
 	}
 }
 
-func SendMessage() byte {
+/*func SendMessage() byte {
 
 	var sock mangos.Socket
 	var err error
@@ -172,10 +169,10 @@ func SendMessage() byte {
 	return msg
 	sock.Close()
 
-}
+}*/
 
 func Start() {
-	SendMessage()
+	//SendMessage()
 	r := gin.Default()
 	r.POST("/login", login)
 	r.DELETE("/logout", Logout)

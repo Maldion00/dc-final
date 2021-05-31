@@ -35,8 +35,10 @@ func date() string {
 func Start() {
 	var sock mangos.Socket
 	var err error
-	RecieveMessage(api.SendMessage())
-	/*if sock, err = pub.NewSocket(); err != nil {
+	//RecieveMessage(api.SendMessage())
+
+	log.Printf("HI")
+	if sock, err = pub.NewSocket(); err != nil {
 		die("can't get new pub socket: %s", err)
 	}
 	if err = sock.Listen(controllerAddress); err != nil {
@@ -50,10 +52,10 @@ func Start() {
 			die("Failed publishing: %s", err.Error())
 		}
 		time.Sleep(time.Second * 3)
-	}*/
+	}
 }
 
-func RecieveMessage(apiMessage byte) {
+/*func RecieveMessage(apiMessage byte) {
 
 	var sock mangos.Socket
 	var err error
