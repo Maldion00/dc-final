@@ -15,6 +15,7 @@ func main() {
 	log.Println("Welcome to the Distributed and Parallel Image Processing System")
 
 	// Start Controller
+	log.Printf("Hi!")
 	go controller.Start()
 
 	// Start Scheduler
