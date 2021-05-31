@@ -34,24 +34,10 @@ func date() string {
 }
 
 func Start() {
-	var sock mangos.Socket
-	var err error
+
 
 	RecieveMessage(controllerAddress)
-	if sock, err = pub.NewSocket(); err != nil {
-		die("can't get new pub socket: %s", err)
-	}
-	if err = sock.Listen(controllerAddress); err != nil {
-		die("can't listen on pub socket: %s", err.Error())
-	}
-	for {
-		// Could also use sock.RecvMsg to get header
-		d := date()
-		log.Printf("Controller: Publishing Date %s\n", d)
-		if err = sock.Send([]byte(d)); err != nil {
-			die("Failed publishing: %s", err.Error())
-		}
-		time.Sleep(time.Second * 3)
+
 	}
 }
 
