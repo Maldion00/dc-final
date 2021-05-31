@@ -2,13 +2,11 @@ package controller
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"time"
 
 	"github.com/Maldion00/dc-final/api"
 	"go.nanomsg.org/mangos"
-	"go.nanomsg.org/mangos/protocol/pub"
 	"go.nanomsg.org/mangos/protocol/rep"
 )
 
@@ -38,7 +36,7 @@ func Start() {
 	var sock mangos.Socket
 	var err error
 	RecieveMessage(api.SendMessage())
-	if sock, err = pub.NewSocket(); err != nil {
+	/*if sock, err = pub.NewSocket(); err != nil {
 		die("can't get new pub socket: %s", err)
 	}
 	if err = sock.Listen(controllerAddress); err != nil {
@@ -52,10 +50,10 @@ func Start() {
 			die("Failed publishing: %s", err.Error())
 		}
 		time.Sleep(time.Second * 3)
-	}
+	}*/
 }
 
-func RecieveMessage(apiMessage string) {
+func RecieveMessage(apiMessage byte) {
 
 	var sock mangos.Socket
 	var err error
