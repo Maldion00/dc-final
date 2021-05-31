@@ -9,7 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.nanomsg.org/mangos"
-	"go.nanomsg.org/mangos/protocol/req"
+	"go.nanomsg.org/mangos/protocol/push"
 )
 
 //Struct to save the data of the users
@@ -20,8 +20,11 @@ type userData struct {
 }
 
 //Users map
-var users = make(map[string]userData)
-var message []byte
+var (
+	users      = make(map[string]userData)
+	APIadress  = "tcp://localhost:40899"
+	APImessage = "ACTIVATE"
+)
 
 //Login function that takes the parameters and decode them to have the username and password.
 //Validates if the user is already created.
@@ -156,26 +159,26 @@ func getInfoWorkload(c *gin.Context) {
 	}
 }
 
-func SendMessage() byte {
-
+func SendMessage(url string, msg string) {
 	var sock mangos.Socket
 	var err error
-	var msg []byte
 
-	if sock, err = req.NewSocket(); err != nil {
-		die("can't get new req socket: %s", err.Error())
+	if sock, err = push.NewSocket(); err != nil {
+		die("can't get new push socket: %s", err.Error())
 	}
-	fmt.Printf("API: REQUEST SENDED %s\n", "ACTIVATE")
-	if err = sock.Send([]byte("ACTIVATE")); err != nil {
+	if err = sock.Dial(url); err != nil {
+		die("can't dial on push socket: %s", err.Error())
+	}
+	fmt.Printf("NODE1: SENDING \"%s\"\n", msg)
+	if err = sock.Send([]byte(msg)); err != nil {
 		die("can't send message on push socket: %s", err.Error())
 	}
-	return msg
+	time.Sleep(time.Second / 10)
 	sock.Close()
-
 }
 
 func Start() {
-	SendMessage()
+	SendMessage(APIadress, APImessage)
 	r := gin.Default()
 	r.POST("/login", login)
 	r.DELETE("/logout", Logout)
