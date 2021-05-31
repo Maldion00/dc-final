@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	log.Println("Hi!")
+	log.Println("Welcome to the Distributed and Parallel Image Processing System")
 
 	// Start Controller
 	go controller.Start()
